@@ -2,8 +2,14 @@ import React from "react";
 import { Icon } from "react-icons-kit";
 import { eyeOff } from "react-icons-kit/feather/eyeOff";
 import { eye } from "react-icons-kit/feather/eye";
-import { useState } from "react";
 import "./SignupLogin.css";
+import { useState } from "react";
+import { Store } from "react-notifications-component";
+import axios from "axios";
+
+// import { getAuth, RecaptchaVerifier } from "firebase/auth";
+
+// import { getAuth, RecaptchaVerifier } from "firebase/auth";
 
 const SignupLogin = () => {
   const [typePassword, setTypePassword] = useState("password"); //password
@@ -17,6 +23,19 @@ const SignupLogin = () => {
 
   const [typeLoginPassword, setTypeLoginPassword] = useState("password"); //Security Answer
   const [iconLoginPassword, setIconLoginPassword] = useState(eyeOff); //Security Answer
+
+  const [name, setName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [answer, setAnswer] = useState("");
+
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  const [otp, setOtp] = useState("");
+
+  const [mailValidated, setMailValidated] = useState(false);
 
   const handleToggle = () => {
     if (typeLoginPassword === "password") {
@@ -57,6 +76,210 @@ const SignupLogin = () => {
       setTypeAnswer("password");
     }
   };
+
+  const handleEmailChange = (e) => {
+    setRegisterEmail(e.target.value);
+    setMailValidated(false);
+  };
+
+  const handleSendOTP = async (e) => {
+    e.preventDefault();
+    if (registerEmail && name && registerPassword && answer) {
+      if (registerPassword === confirmPassword) {
+        //SEND OTP
+
+        try {
+          const res = await axios.post(
+            `${process.env.REACT_APP_API}/api/v1/otp/sendOtp`,
+            {
+              registerEmail,
+              name,
+            }
+          );
+          if (res && res?.data?.success) {
+            Store.addNotification({
+              title: `OTP HAS BEEN SENT to ${registerEmail}:)`,
+              message: "Check both Inbox and the Spam Folder for OTP",
+              type: "success",
+              insert: "top",
+              container: "top-right",
+              animationIn: ["animate__animated", "animate__fadeIn"],
+              animationOut: ["animate__animated", "animate__fadeOut"],
+              dismiss: {
+                duration: 5000,
+                onScreen: true,
+              },
+            });
+          }
+        } catch (error) {
+          Store.addNotification({
+            title: error,
+            message: `Something went Wrong!!!`,
+            type: "danger",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animate__animated", "animate__fadeIn"],
+            animationOut: ["animate__animated", "animate__fadeOut"],
+            dismiss: {
+              duration: 2000,
+              onScreen: true,
+            },
+          });
+        }
+      } else {
+        //PASSWORDS DONT MATCH
+        Store.addNotification({
+          title: "PASSWORDS DON'T MATCH -_-",
+          message: "Please Type the Correct Passwords",
+          type: "danger",
+          insert: "top",
+          container: "top-right",
+          animationIn: ["animate__animated", "animate__fadeIn"],
+          animationOut: ["animate__animated", "animate__fadeOut"],
+          dismiss: {
+            duration: 3000,
+            onScreen: true,
+          },
+        });
+      }
+    } else {
+      //INCOMPLETE DETAILS
+      Store.addNotification({
+        title: "INCOMPLETE DETAILS -_-",
+        message: "Please Fill in All The Details",
+        type: "danger",
+        insert: "top",
+        container: "top-right",
+        animationIn: ["animate__animated", "animate__fadeIn"],
+        animationOut: ["animate__animated", "animate__fadeOut"],
+        dismiss: {
+          duration: 2000,
+          onScreen: true,
+        },
+      });
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+
+    try {
+      if (otp.length === 6) {
+        const res = await axios.post(
+          `${process.env.REACT_APP_API}/api/v1/otp/verifyOTP`,
+          { registerEmail, otp }
+        );
+        console.log(res);
+        console.log(res?.data?.success);
+        if (res && res?.data?.success) {
+          setMailValidated(true);
+          Store.addNotification({
+            title: "OTP VERIFIED",
+            message: "Your Email has been verified",
+            type: "success",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animate__animated", "animate__fadeIn"],
+            animationOut: ["animate__animated", "animate__fadeOut"],
+            dismiss: {
+              duration: 2000,
+              onScreen: true,
+            },
+          });
+        } else {
+          Store.addNotification({
+            title: "Wrong OTP",
+            message: "Please Enter the Correct OTP",
+            type: "danger",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animate__animated", "animate__fadeIn"],
+            animationOut: ["animate__animated", "animate__fadeOut"],
+            dismiss: {
+              duration: 2000,
+              onScreen: true,
+            },
+          });
+        }
+      } else {
+        //WRONG LENGTH OF OTP
+        Store.addNotification({
+          title: "INCORRECT LENGTH!!!",
+          message: "Please Enter 6-digit OTP",
+          type: "danger",
+          insert: "top",
+          container: "top-right",
+          animationIn: ["animate__animated", "animate__fadeIn"],
+          animationOut: ["animate__animated", "animate__fadeOut"],
+          dismiss: {
+            duration: 2000,
+            onScreen: true,
+          },
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleRegister = async () => {
+    try {
+      if (mailValidated) {
+        const res = await axios.post(
+          `${process.env.REACT_APP_API}/api/v1/auth/register`,
+          { name, registerEmail, registerPassword, answer }
+        );
+
+        if (res && res?.data?.success) {
+          Store.addNotification({
+            title: "CONGRATULATIONS",
+            message: `${res?.data?.message}`,
+            type: "success",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animate__animated", "animate__fadeIn"],
+            animationOut: ["animate__animated", "animate__fadeOut"],
+            dismiss: {
+              duration: 2000,
+              onScreen: true,
+            },
+          });
+        } else {
+          Store.addNotification({
+            title: "REGSITRATION NOT SUCCESSFUL",
+            message: `${res?.data?.message}`,
+            type: "danger",
+            insert: "top",
+            container: "top-right",
+            animationIn: ["animate__animated", "animate__fadeIn"],
+            animationOut: ["animate__animated", "animate__fadeOut"],
+            dismiss: {
+              duration: 2000,
+              onScreen: true,
+            },
+          });
+        }
+      } else {
+        setOtp("");
+        Store.addNotification({
+          title: "EMAIL NOT VALIDATED!!!",
+          message: "Please Validate your Email",
+          type: "danger",
+          insert: "top",
+          container: "top-right",
+          animationIn: ["animate__animated", "animate__fadeIn"],
+          animationOut: ["animate__animated", "animate__fadeOut"],
+          dismiss: {
+            duration: 2000,
+            onScreen: true,
+          },
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="body">
       <div className="container1">
@@ -96,18 +319,25 @@ const SignupLogin = () => {
                     <div className="card-front">
                       <div className="center-wrap">
                         <div className="section text-center">
-                          <h4 className="mb-4 pb-3">Log In</h4>
+                          {/* -----------------------------LOGIN -------------------------------------------------
+                    ------------------------------------------------------------------------------------------
+                    -------------------------------------------------------------------------------------------*/}
+                          <h4 className="mb-4 pb-3 heading">Log In</h4>
                           <div className="form-group mt-2">
                             <input
-                              type="tel"
+                              type="email"
+                              value={loginEmail}
+                              onChange={(e) => setLoginEmail(e.target.value)}
                               className="form-style"
-                              placeholder="Phone Number"
+                              placeholder="Email ID"
                             />
-                            <i className="input-icon uil uil-phone" />
+                            <i className="input-icon uil uil-envelope" />
                           </div>
                           <div className="form-group mt-2">
                             <input
                               type={typeLoginPassword}
+                              value={loginPassword}
+                              onChange={(e) => setLoginPassword(e.target.value)}
                               className="form-style"
                               placeholder="Password"
                             />
@@ -135,13 +365,19 @@ const SignupLogin = () => {
                         </div>
                       </div>
                     </div>
+                    {/* -----------------------------REGISTER -------------------------------------------------
+                    ------------------------------------------------------------------------------------------
+                    -------------------------------------------------------------------------------------------*/}
                     <div className="card-back">
                       <div className="center-wrap">
                         <div className="section text-center">
-                          <h4 className="mb-3 pb-3">Sign Up</h4>
+                          <h4 className="mb-3 pb-3 heading">Sign Up</h4>
+
                           <div className="form-group">
                             <input
                               type="text"
+                              value={name}
+                              onChange={(e) => setName(e.target.value)}
                               className="form-style"
                               placeholder="Full Name"
                             />
@@ -149,15 +385,21 @@ const SignupLogin = () => {
                           </div>
                           <div className="form-group mt-2">
                             <input
-                              type="tel"
+                              value={registerEmail}
+                              onChange={handleEmailChange}
+                              type="text"
                               className="form-style"
-                              placeholder="Phone Number"
+                              placeholder="Email ID"
                             />
-                            <i className="input-icon uil uil-phone" />
+                            <i className="input-icon uil uil-envelope" />
                           </div>
 
                           <div className="form-group mt-2">
                             <input
+                              value={registerPassword}
+                              onChange={(e) =>
+                                setRegisterPassword(e.target.value)
+                              }
                               type={typePassword}
                               className="form-style"
                               placeholder="Password"
@@ -177,16 +419,21 @@ const SignupLogin = () => {
                           <div className="form-group mt-2">
                             <input
                               type={typeConfirmPassword}
+                              value={confirmPassword}
+                              onChange={(e) =>
+                                setConfirmPassword(e.target.value)
+                              }
                               className="form-style"
                               placeholder="Confirm Password"
                             />
+
                             <i className="input-icon uil uil-lock-alt" />
                             <span
                               className="flex justify-around items-center"
                               onClick={handleToggleConfirmPassword}
                             >
                               <Icon
-                                className="eyeIcon"
+                                className="abs0lute eyeIcon"
                                 icon={iconConfirmPassword}
                                 size={20}
                               />
@@ -195,10 +442,12 @@ const SignupLogin = () => {
                           <div className="form-group mt-2">
                             <input
                               type={typeAnswer}
+                              value={answer}
+                              onChange={(e) => setAnswer(e.target.value)}
                               className="form-style"
                               placeholder="Security Answer"
                             />
-                            <i className="input-icon uil uil-lock-alt" />
+                            <i className="input-icon uil uil-key-skeleton" />
                             <span
                               className="flex justify-around items-center"
                               onClick={handleToggleAnswer}
@@ -212,7 +461,11 @@ const SignupLogin = () => {
                           </div>
 
                           <div>
-                            <button className="btn mt-4 otp-button">
+                            <button
+                              type="submit"
+                              className="btn mt-4 otp-button"
+                              onClick={handleSendOTP}
+                            >
                               Send OTP
                             </button>
                           </div>
@@ -223,17 +476,24 @@ const SignupLogin = () => {
                                 type="number"
                                 className="form-style otp-box"
                                 placeholder="OTP"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value)}
                               />
-                              <i className="input-icon uil uil-lock-alt" />
+                              <i className="input-icon uil uil-mobile-android-alt" />
                             </div>
                             <div>
-                              <button className="btn otp-verify-button">
+                              <button
+                                className="btn otp-verify-button"
+                                onClick={handleVerifyOTP}
+                              >
                                 Verify OTP
                               </button>
                             </div>
                           </div>
 
-                          <button className="btn mt-4">REGISTER</button>
+                          <button className="btn mt-4" onClick={handleRegister}>
+                            REGISTER
+                          </button>
                         </div>
                       </div>
                     </div>
