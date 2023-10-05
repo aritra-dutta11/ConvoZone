@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "react-icons-kit";
 import { eyeOff } from "react-icons-kit/feather/eyeOff";
 import { eye } from "react-icons-kit/feather/eye";
@@ -36,6 +37,8 @@ const SignupLogin = () => {
   const [otp, setOtp] = useState("");
 
   const [mailValidated, setMailValidated] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleToggle = () => {
     if (typeLoginPassword === "password") {
@@ -96,11 +99,26 @@ const SignupLogin = () => {
               name,
             }
           );
+
           if (res && res?.data?.success) {
             Store.addNotification({
               title: `OTP HAS BEEN SENT to ${registerEmail}:)`,
               message: "Check both Inbox and the Spam Folder for OTP",
               type: "success",
+              insert: "top",
+              container: "top-right",
+              animationIn: ["animate__animated", "animate__fadeIn"],
+              animationOut: ["animate__animated", "animate__fadeOut"],
+              dismiss: {
+                duration: 5000,
+                onScreen: true,
+              },
+            });
+          } else {
+            Store.addNotification({
+              title: "ACCOUNT ALREADY EXISTS",
+              message: res?.data?.message,
+              type: "danger",
               insert: "top",
               container: "top-right",
               animationIn: ["animate__animated", "animate__fadeIn"],
@@ -229,7 +247,7 @@ const SignupLogin = () => {
           `${process.env.REACT_APP_API}/api/v1/auth/register`,
           { name, registerEmail, registerPassword, answer }
         );
-
+        console.log(res?.data.success);
         if (res && res?.data?.success) {
           Store.addNotification({
             title: "CONGRATULATIONS",
@@ -244,6 +262,8 @@ const SignupLogin = () => {
               onScreen: true,
             },
           });
+          // navigate("/");
+          window.location.reload(true);
         } else {
           Store.addNotification({
             title: "REGSITRATION NOT SUCCESSFUL",
